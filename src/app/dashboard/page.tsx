@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase-server'
+import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { MinaAvatar } from '@/components/mina/MinaAvatar'
 
