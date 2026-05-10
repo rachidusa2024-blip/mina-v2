@@ -1,26 +1,62 @@
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #0C0F1A;
+  --surface: #141827;
+  --surface2: #1A2035;
+  --teal: #00C9A7;
+  --teal-d: #00A888;
+  --teal-dim: rgba(0,201,167,0.07);
+  --teal-b: rgba(0,201,167,0.18);
+  --gold: #C9A84C;
+  --gold-dim: rgba(201,168,76,0.07);
+  --gold-b: rgba(201,168,76,0.2);
+  --white: #F0F4FF;
+  --soft: #C8D0E0;
+  --muted: #8B9CB6;
+  --dim: #4A5568;
+  --bord: rgba(255,255,255,0.07);
+  --bord-lit: rgba(255,255,255,0.12);
+  --red: #EF4444;
+  --red-dim: rgba(239,68,68,0.07);
+  --red-b: rgba(239,68,68,0.18);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg);
+  color: var(--white);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
+
+.font-heading { font-family: 'Cormorant Garamond', serif; }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 2px; }
+
+@keyframes fadeUp { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.35; } }
+@keyframes glow { 0%,100% { box-shadow:0 0 18px rgba(201,168,76,0.1); } 50% { box-shadow:0 0 40px rgba(201,168,76,0.22); } }
+@keyframes orbSpin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+.animate-fade-up { animation: fadeUp 0.4s ease both; }
+.animate-fade-in { animation: fadeIn 0.3s ease both; }
+.animate-glow { animation: glow 5s ease infinite; }
+.animate-pulse-dot { animation: pulse 2s ease infinite; }
+.animate-spin-slow { animation: orbSpin 14s linear infinite; }
+.animate-spin-fast { animation: spin 0.7s linear infinite; }
+.delay-100 { animation-delay:0.1s; }
+.delay-200 { animation-delay:0.2s; }
+.delay-300 { animation-delay:0.3s; }
+.delay-400 { animation-delay:0.4s; }
+.delay-500 { animation-delay:0.5s; }
