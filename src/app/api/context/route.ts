@@ -1,7 +1,7 @@
 // app/api/context/route.ts
 
 import { NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { summarizeCurrentState, getFinancialContext } from '@/lib/memory'
 
 export async function GET() {

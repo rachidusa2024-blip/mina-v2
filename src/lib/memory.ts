@@ -3,7 +3,7 @@
 // The core brain — all persistent memory operations
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
 import type {
   MemoryEvent,
   MemoryEventType,

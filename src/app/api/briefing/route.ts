@@ -1,7 +1,7 @@
 // app/api/briefing/route.ts
 
 import { NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { getFinancialContext } from '@/lib/memory'
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY!

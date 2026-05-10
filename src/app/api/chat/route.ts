@@ -1,7 +1,7 @@
 // app/api/chat/route.ts
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { getFinancialContext, saveMemoryEvent, createActionItem } from '@/lib/memory'
 import { buildMinaSystemPrompt } from '@/lib/prompt'
 
