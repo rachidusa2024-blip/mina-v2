@@ -137,7 +137,7 @@ export default function SetupPage() {
   }
 
   function buildMemories(ob: OnboardingData | null, s: SetupData, avail: number) {
-    const mems = []
+    const mems: {eventType: string; category: string; summary: string; importance: number}[] = []
     if (!ob) return mems
 
     const sitLabels: Record<string, string> = {
