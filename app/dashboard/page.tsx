@@ -24,47 +24,24 @@ export default function DashboardPage() {
       "--gold": "#C9A84C", "--border": "rgba(255,255,255,0.08)",
     } as React.CSSProperties}>
       <DashboardHeader firstName={data.firstName} />
-
       <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-20 pb-16 flex flex-col gap-8">
-
         <MinaInsightHero
           pressureState={data.pressureState}
           pressureStateColor={data.pressureStateColor}
           currentPhase={data.currentPhase}
-          insightText={data.insightText}
-          patternObservation={data.patternObservation}
-          todayGuidance={data.todayGuidance}
+          coachInsight={data.coachInsight}
+          coachFocus={data.coachFocus}
           confidenceScore={data.confidenceScore}
           recommendation={data.recommendation}
           recommendedRoute={data.recommendedRoute}
         />
-
-        <TodaysNextMove
-          label={data.nextMoveLabel}
-          detail={data.nextMoveDetail}
-          route={data.nextMoveRoute}
-        />
-
+        <TodaysNextMove label={data.nextMoveLabel} detail={data.nextMoveDetail} route={data.nextMoveRoute} />
         <LiveCallCenter />
-
-        <MinaMemory
-          mainPressure={data.mainPressure}
-          fearPattern={data.fearPattern}
-          supportStyle={data.supportStyle}
-          currentPhaseName={data.currentPhaseName}
-        />
-
+        <MinaMemory mainPressure={data.mainPressure} fearPattern={data.fearPattern} supportStyle={data.supportStyle} currentPhaseName={data.currentPhaseName} />
         <PressureMap areas={data.pressureAreas} />
-
         <Workspaces />
-
-        <RecoveryJourney
-          phases={data.journeyPhases}
-          currentIndex={data.currentJourneyIndex}
-        />
-
+        <RecoveryJourney phases={data.journeyPhases} currentIndex={data.currentJourneyIndex} nextMilestoneName={data.nextMilestoneName} />
         <MinaNoticed observation={data.behaviorObservation} />
-
       </main>
     </div>
   );

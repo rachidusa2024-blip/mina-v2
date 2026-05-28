@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, Check } from "lucide-react";
 import Link from "next/link";
 import type { PressureState, CurrentPhase } from "../useDashboardData";
 
@@ -9,9 +9,8 @@ interface MinaInsightHeroProps {
   pressureState: PressureState;
   pressureStateColor: string;
   currentPhase: CurrentPhase;
-  insightText: string;
-  patternObservation: string;
-  todayGuidance: string;
+  coachInsight: string;
+  coachFocus: string;
   confidenceScore: number;
   recommendation: string;
   recommendedRoute: string;
@@ -24,10 +23,16 @@ const phaseColors: Record<CurrentPhase, string> = {
   Recover: "#C9A84C",
 };
 
+const TRUST_SIGNALS = [
+  "Your information stays private",
+  "Mina never makes financial decisions for you",
+  "Professional resources available when needed",
+];
+
 export default function MinaInsightHero({
   pressureState, pressureStateColor, currentPhase,
-  insightText, patternObservation, todayGuidance,
-  confidenceScore, recommendation, recommendedRoute,
+  coachInsight, coachFocus, confidenceScore,
+  recommendation, recommendedRoute,
 }: MinaInsightHeroProps) {
   const phaseColor = phaseColors[currentPhase];
 
@@ -43,14 +48,12 @@ export default function MinaInsightHero({
         boxShadow: "0 0 80px rgba(0,201,167,0.06), 0 20px 60px rgba(0,0,0,0.4)",
       }}
     >
-      {/* Ambient top-right glow */}
-      <div className="absolute top-0 right-0 w-72 h-72 pointer-events-none"
-        style={{ background: "radial-gradient(circle, rgba(0,201,167,0.07) 0%, transparent 65%)", transform: "translate(30%,-30%)" }}
-      />
+      <div className="absolute top-0 right-0 w-80 h-80 pointer-events-none"
+        style={{ background: "radial-gradient(circle, rgba(0,201,167,0.06) 0%, transparent 65%)", transform: "translate(35%,-35%)" }} />
 
-      <div className="relative z-10 p-7 sm:p-8 flex flex-col gap-6">
+      <div className="relative z-10 p-7 sm:p-8 flex flex-col gap-7">
 
-        {/* Top row: eyebrow + badges */}
+        {/* Header */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center"
@@ -74,62 +77,37 @@ export default function MinaInsightHero({
           </div>
         </div>
 
-        {/* Insight quote */}
-        <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(1.15rem, 3vw, 1.45rem)", color: "var(--text-prime)", fontStyle: "italic", lineHeight: 1.6 }}>
-          "{insightText}"
-        </p>
+        {/* Coach insight — human narrative */}
+        <div className="flex flex-col gap-4">
+          <p style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: "clamp(1.1rem, 2.8vw, 1.38rem)",
+            color: "var(--text-prime)",
+            lineHeight: 1.7,
+          }}>
+            {coachInsight}
+          </p>
 
-        {/* Intelligence strip */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* Pattern */}
-          <div className="flex flex-col gap-1.5 px-4 py-3 rounded-xl"
-            style={{ background: "rgba(129,140,248,0.07)", border: "1px solid rgba(129,140,248,0.14)" }}>
-            <span className="text-xs font-semibold uppercase tracking-wider"
-              style={{ fontFamily: "'DM Sans', sans-serif", color: "#818CF8" }}>Pattern</span>
-            <p className="text-sm leading-snug"
-              style={{ fontFamily: "'DM Sans', sans-serif", color: "var(--text-prime)" }}>
-              {patternObservation}
-            </p>
-          </div>
-
-          {/* Today */}
-          <div className="flex flex-col gap-1.5 px-4 py-3 rounded-xl"
-            style={{ background: "rgba(0,201,167,0.06)", border: "1px solid rgba(0,201,167,0.14)" }}>
-            <span className="text-xs font-semibold uppercase tracking-wider"
-              style={{ fontFamily: "'DM Sans', sans-serif", color: "var(--teal)" }}>Today</span>
-            <p className="text-sm leading-snug"
-              style={{ fontFamily: "'DM Sans', sans-serif", color: "var(--text-prime)" }}>
-              {todayGuidance}
-            </p>
-          </div>
-
-          {/* Confidence */}
-          <div className="flex flex-col gap-2 px-4 py-3 rounded-xl"
-            style={{ background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.14)" }}>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider"
-                style={{ fontFamily: "'DM Sans', sans-serif", color: "#C9A84C" }}>Confidence</span>
-              <span className="text-sm font-bold"
-                style={{ fontFamily: "'DM Sans', sans-serif", color: "#C9A84C" }}>{confidenceScore}%</span>
+          {/* Today's focus */}
+          <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl"
+            style={{ background: "rgba(0,201,167,0.07)", border: "1px solid rgba(0,201,167,0.16)" }}>
+            <div className="w-1 h-full rounded-full flex-shrink-0 mt-0.5 self-stretch"
+              style={{ background: "var(--teal)", minHeight: "16px" }} />
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-bold uppercase tracking-wider"
+                style={{ fontFamily: "'DM Sans', sans-serif", color: "var(--teal)" }}>
+                Today's focus
+              </span>
+              <p className="text-sm leading-relaxed"
+                style={{ fontFamily: "'DM Sans', sans-serif", color: "var(--text-prime)" }}>
+                {coachFocus}
+              </p>
             </div>
-            <div className="w-full h-1.5 rounded-full overflow-hidden"
-              style={{ background: "rgba(255,255,255,0.06)" }}>
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${confidenceScore}%` }}
-                transition={{ duration: 1.2, delay: 0.4, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
-                className="h-full rounded-full"
-                style={{ background: "linear-gradient(to right, rgba(201,168,76,0.6), #C9A84C)" }}
-              />
-            </div>
-            <p className="text-xs" style={{ fontFamily: "'DM Sans', sans-serif", color: "rgba(201,168,76,0.65)" }}>
-              {confidenceScore < 60 ? "Add more context to improve" : confidenceScore < 80 ? "Good clarity on your situation" : "Strong situational read"}
-            </p>
           </div>
         </div>
 
-        {/* Recommendation + CTA */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4 pt-2"
+        {/* CTA row */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 pt-1"
           style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
           <p className="text-sm leading-relaxed flex-1"
             style={{ fontFamily: "'DM Sans', sans-serif", color: "var(--text-muted)" }}>
@@ -144,6 +122,21 @@ export default function MinaInsightHero({
             <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
           </Link>
         </div>
+
+        {/* Trust signals */}
+        <div className="flex flex-wrap gap-x-5 gap-y-1.5 pt-1"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+          {TRUST_SIGNALS.map(t => (
+            <div key={t} className="flex items-center gap-1.5">
+              <Check size={11} style={{ color: "rgba(0,201,167,0.6)", flexShrink: 0 }} />
+              <span className="text-xs"
+                style={{ fontFamily: "'DM Sans', sans-serif", color: "rgba(136,146,164,0.55)" }}>
+                {t}
+              </span>
+            </div>
+          ))}
+        </div>
+
       </div>
     </motion.div>
   );
