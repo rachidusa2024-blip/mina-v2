@@ -5,11 +5,27 @@ import { OnboardingData, initialOnboardingData } from "@/components/features/onb
 
 export type PressureState = "Calm" | "Rising" | "High" | "Crisis";
 export type CurrentPhase = "Stabilize" | "Protect" | "Act" | "Recover";
+export type EmotionalState = "Overwhelmed" | "Uncertain" | "Defensive" | "Preparing" | "Focused" | "Recovering";
 
 export interface PressureArea {
   label: string;
   status: "Clear" | "Needs attention" | "Watch" | "Act now";
   statusColor: string;
+  route: string;
+}
+
+export interface NextBestAction {
+  action: string;
+  estimatedTime: string;
+  impact: "High" | "Medium" | "Low";
+  reason: string;
+  route: string;
+}
+
+export interface MemoryCard {
+  label: string;
+  value: string;
+  evolutionLabel: string;
 }
 
 export interface DashboardData {
@@ -19,24 +35,22 @@ export interface DashboardData {
   currentPhase: CurrentPhase;
   coachInsight: string;
   coachFocus: string;
-  confidenceScore: number;
   recommendation: string;
   recommendedRoute: string;
-  nextMoveLabel: string;
-  nextMoveRoute: string;
-  nextMoveDetail: string;
-  mainPressure: string;
-  fearPattern: string;
-  supportStyle: string;
-  currentPhaseName: string;
+  nextBestAction: NextBestAction;
+  recoveryReadiness: number;
+  emotionalState: EmotionalState;
+  emotionalStateColor: string;
+  memoryCards: MemoryCard[];
   pressureAreas: PressureArea[];
   journeyPhases: string[];
   currentJourneyIndex: number;
+  journeyProgress: number;
   nextMilestoneName: string;
   behaviorObservation: string;
 }
 
-function loadOnboarding(): OnboardingData {
+function load(): OnboardingData {
   if (typeof window === "undefined") return initialOnboardingData;
   try {
     const raw = sessionStorage.getItem("mina_onboarding_v2");
@@ -45,133 +59,138 @@ function loadOnboarding(): OnboardingData {
   return initialOnboardingData;
 }
 
-function derivePressureState(urgency: number): PressureState {
-  if (urgency <= 1) return "Calm";
-  if (urgency <= 2) return "Rising";
-  if (urgency <= 3) return "High";
-  return "Crisis";
+function pressureStateColor(s: PressureState): string {
+  return { Calm: "#22c55e", Rising: "#f59e0b", High: "#f97316", Crisis: "#ef4444" }[s];
 }
 
-function pressureStateColor(state: PressureState): string {
-  return { Calm: "#22c55e", Rising: "#f59e0b", High: "#f97316", Crisis: "#ef4444" }[state];
-}
-
-function derivePhase(data: OnboardingData): CurrentPhase {
-  const hasLegal = data.pressureSources.some(s => s.toLowerCase().includes("lawsuit") || s.toLowerCase().includes("legal"));
-  if (data.urgencyLevel >= 4 || data.hardestThings.some(h => h.toLowerCase().includes("overwhelm"))) return "Stabilize";
-  if (hasLegal || data.fears.includes("Being sued") || data.fears.includes("Wage garnishment")) return "Protect";
+function derivePhase(d: OnboardingData): CurrentPhase {
+  const hasLegal = d.pressureSources.some(s => s.toLowerCase().includes("lawsuit") || s.toLowerCase().includes("legal"));
+  if (d.urgencyLevel >= 4 || d.hardestThings.some(h => h.toLowerCase().includes("overwhelm"))) return "Stabilize";
+  if (hasLegal || d.fears.includes("Being sued") || d.fears.includes("Wage garnishment")) return "Protect";
   return "Stabilize";
 }
 
-function deriveConfidence(data: OnboardingData): number {
-  let score = 38;
-  if (data.pressureSources.length > 0) score += 14;
-  if (data.hardestThings.length > 0) score += 10;
-  if (data.urgencyLevel !== 3) score += 8;
-  if (data.fears.length > 0) score += 10;
-  if (data.behaviorPatterns.length > 0) score += 14;
-  if (data.supportStyle.length > 0) score += 10;
-  return Math.min(score, 94);
+function deriveEmotionalState(d: OnboardingData): { state: EmotionalState; color: string } {
+  const avoider = d.behaviorPatterns.some(b => b.toLowerCase().includes("avoid") || b.toLowerCase().includes("ignore"));
+  const panicker = d.behaviorPatterns.some(b => b.toLowerCase().includes("panic") || b.toLowerCase().includes("agree"));
+  const hasLegal = d.pressureSources.some(s => s.toLowerCase().includes("lawsuit") || s.toLowerCase().includes("legal"));
+  const map: Record<EmotionalState, string> = {
+    Overwhelmed: "#ef4444", Uncertain: "#f59e0b", Defensive: "#f97316",
+    Preparing: "#818CF8", Focused: "#00C9A7", Recovering: "#22c55e",
+  };
+  let state: EmotionalState = "Uncertain";
+  if (d.urgencyLevel >= 5) state = "Overwhelmed";
+  else if (d.urgencyLevel === 4 && hasLegal) state = "Defensive";
+  else if (d.urgencyLevel === 4) state = "Overwhelmed";
+  else if (hasLegal || d.fears.includes("Being sued")) state = "Defensive";
+  else if (avoider && d.urgencyLevel >= 3) state = "Defensive";
+  else if (panicker) state = "Uncertain";
+  else if (d.urgencyLevel <= 2 && d.supportStyle.length > 0) state = "Preparing";
+  else if (d.urgencyLevel === 3) state = "Uncertain";
+  else state = "Preparing";
+  return { state, color: map[state] };
 }
 
-function deriveCoachInsight(data: OnboardingData): { insight: string; focus: string } {
-  const avoider = data.behaviorPatterns.some(b => b.toLowerCase().includes("avoid") || b.toLowerCase().includes("ignore"));
-  const panicker = data.behaviorPatterns.some(b => b.toLowerCase().includes("panic") || b.toLowerCase().includes("agree"));
-  const overwhelmed = data.hardestThings.some(h => h.toLowerCase().includes("overwhelm") || h.toLowerCase().includes("clearly"));
-  const ashamed = data.hardestThings.some(h => h.toLowerCase().includes("ashamed"));
-  const delayer = data.hardestThings.some(h => h.toLowerCase().includes("delay") || h.toLowerCase().includes("stuck"));
-  const hasLegal = data.pressureSources.some(s => s.toLowerCase().includes("lawsuit") || s.toLowerCase().includes("legal"));
-  const hasCollectors = data.pressureSources.some(s => s.toLowerCase().includes("collector"));
-  const mainSource = data.pressureSources[0]?.toLowerCase() ?? "financial uncertainty";
+function deriveRecoveryReadiness(d: OnboardingData): number {
+  let score = 12;
+  if (d.pressureSources.length > 0) score += 8;
+  if (d.hardestThings.length > 0) score += 5;
+  if (d.urgencyLevel !== 3) score += 4;
+  if (d.fears.length > 0) score += 5;
+  if (d.behaviorPatterns.length > 0) score += 7;
+  if (d.supportStyle.length > 0) score += 5;
+  return Math.min(score, 46);
+}
 
-  if (hasLegal) {
-    return {
-      insight: `You told Mina that legal pressure is part of what you are facing. Legal notices are designed to feel final — they are not. You have rights that most people in your position do not know about, and many of those rights come with deadlines. Mina will help you understand exactly what each document means before you decide what to do next.`,
-      focus: "Do not ignore any legal notice. Upload it first so Mina can explain what it actually requires.",
-    };
-  }
-  if (avoider) {
-    return {
-      insight: `You told Mina that ${mainSource} is putting the most pressure on you right now. When pressure increases, you tend to step back from difficult conversations — not because you do not care, but because making the wrong move feels worse than waiting. That instinct has protected you before. Mina will help you know when to wait and when it is actually safe to respond.`,
-      focus: "Prepare what to say before the pressure arrives — not in the middle of it.",
-    };
-  }
-  if (panicker) {
-    return {
-      insight: `You told Mina that ${mainSource} is creating significant stress. Under pressure, you tend to respond quickly — often before you have had time to think through what you are agreeing to. This is not a character flaw. It is what happens when people are trained to feel that silence means failure. Mina will slow the conversation down so you can respond with clarity instead of fear.`,
-      focus: "Practice pausing before responding to any financial request. Silence is not agreement.",
-    };
-  }
-  if (ashamed) {
-    return {
-      insight: `You are dealing with something that carries real weight — and you are dealing with it honestly. The shame that comes with debt pressure is one of its cruelest parts, because it makes people feel like they deserve what is happening to them. You do not. Mina will help you focus on what you can control and what your actual options are.`,
-      focus: "Start with one small action today. Not because it will fix everything — because it will remind you that you can move forward.",
-    };
-  }
-  if (overwhelmed) {
-    return {
-      insight: `You told Mina that you are having trouble thinking clearly right now. That is not a sign of weakness — it is what happens when multiple pressures arrive at the same time. Your brain is trying to process too many things at once. Mina will help you slow down, pick one thing, and move from there.`,
-      focus: "Do not try to solve everything today. Identify the single most urgent item and start there.",
-    };
-  }
-  if (delayer) {
-    return {
-      insight: `You told Mina that uncertainty is your biggest source of pressure. When things feel unclear, you tend to gather more information before making a decision. That is not weakness — it is how you protect yourself from mistakes. Mina will help you understand the situation clearly enough that moving forward feels safe, not risky.`,
-      focus: "Review what is causing the most pressure before taking any action.",
-    };
-  }
-  if (hasCollectors) {
-    return {
-      insight: `You told Mina that debt collectors are part of the pressure you are facing. Collector calls are built to create urgency — and that urgency is often manufactured. You have legal rights that limit what collectors can say and do. Mina will help you understand those rights and give you the exact words to use when they call.`,
-      focus: "Prepare your standard response before the next call. Do not improvise under pressure.",
-    };
-  }
+function deriveCoachInsight(d: OnboardingData): { insight: string; focus: string } {
+  const main = d.pressureSources[0]?.toLowerCase() ?? "financial uncertainty";
+  const fear = d.fears[0]?.toLowerCase() ?? "the unknown";
+  const style = d.supportStyle[0]?.toLowerCase() ?? "step-by-step guidance";
+  const avoider = d.behaviorPatterns.some(b => b.toLowerCase().includes("avoid") || b.toLowerCase().includes("ignore"));
+  const panicker = d.behaviorPatterns.some(b => b.toLowerCase().includes("panic") || b.toLowerCase().includes("agree"));
+  const hasLegal = d.pressureSources.some(s => s.toLowerCase().includes("lawsuit") || s.toLowerCase().includes("legal"));
+
+  const behaviorLine = avoider
+    ? "When pressure rises, you tend to step back from difficult conversations to avoid making the wrong move."
+    : panicker
+    ? "When pressure rises, you tend to respond quickly — sometimes before fully understanding what you are agreeing to."
+    : "When pressure rises, you tend to slow down and gather more information before acting.";
+
+  const fearLine = `Your biggest concern right now is ${fear}.`;
+
+  const focusLine = hasLegal
+    ? "Because of that, Mina will help you understand every document before responding, and identify your legal options clearly."
+    : avoider
+    ? "Because of that, Mina will help you prepare responses in advance — so you can engage on your terms, not from fear."
+    : panicker
+    ? "Because of that, Mina will give you pause phrases for every difficult conversation — so you stop before agreeing to anything."
+    : `Because of that, Mina will focus on ${style} — building your confidence before each decision.`;
+
+  const insight = `You told Mina that ${main} is creating the most pressure for you right now. ${behaviorLine} ${fearLine} ${focusLine}`;
+  const focus = avoider ? "Prepare your response before the pressure arrives — not in the middle of it."
+    : panicker ? "Practice pausing before responding. Silence is not agreement."
+    : hasLegal ? "Do not ignore any legal notice. Upload it first so Mina can explain what it actually requires."
+    : "Review what is causing the most pressure before taking any action.";
+
+  return { insight, focus };
+}
+
+function deriveNextBestAction(d: OnboardingData): NextBestAction {
+  const hasLegal = d.pressureSources.some(s => s.toLowerCase().includes("lawsuit") || s.toLowerCase().includes("legal"));
+  const hasCollectors = d.pressureSources.some(s => s.toLowerCase().includes("collector"));
+  const highUrgency = d.urgencyLevel >= 4;
+
+  if (hasLegal) return {
+    action: "Upload the legal notice or summons you received.",
+    estimatedTime: "3 minutes",
+    impact: "High",
+    reason: "Mina can identify deadlines, identify your rights under FDCPA and FCRA, and outline your response options before any deadline passes.",
+    route: "/documents",
+  };
+  if (hasCollectors) return {
+    action: "Prepare your response before the next collector call.",
+    estimatedTime: "5 minutes",
+    impact: "High",
+    reason: "Mina will give you exact phrases to use, help you identify pressure tactics, and keep a record of what was said.",
+    route: "/live-call",
+  };
+  if (highUrgency) return {
+    action: "Open Stabilize Mode and tell Mina what is weighing on you most.",
+    estimatedTime: "3 minutes",
+    impact: "High",
+    reason: "When pressure is high, decisions made under stress are rarely the right ones. Mina will help you slow down before anything else.",
+    route: "/stabilize",
+  };
   return {
-    insight: `You shared your situation with Mina. Financial pressure is not just about money — it is about the decisions you have to make while carrying a weight that most people cannot see. Mina is here to help you make those decisions more clearly, with less fear, one step at a time.`,
-    focus: "Open Stabilize Mode and tell Mina what is weighing on you most right now.",
+    action: "Upload the most stressful letter or notice you have received.",
+    estimatedTime: "3 minutes",
+    impact: "Medium",
+    reason: "Mina can identify deadlines, pressure tactics, and your response options — turning confusion into clarity.",
+    route: "/documents",
   };
 }
 
-function deriveRecommendation(data: OnboardingData): { text: string; route: string } {
-  const hasLegal = data.pressureSources.some(s => s.toLowerCase().includes("lawsuit") || s.toLowerCase().includes("legal"));
-  const hasCollectors = data.pressureSources.some(s => s.toLowerCase().includes("collector"));
-  if (hasLegal) return { text: "Upload any legal notice so Mina can analyze it before you respond.", route: "/documents" };
-  if (hasCollectors) return { text: "Open a Live Call session before your next collector call.", route: "/live-call" };
-  if (data.urgencyLevel >= 4) return { text: "Start Stabilize Mode to slow down the pressure before making any decisions.", route: "/stabilize" };
-  return { text: "Begin Stabilize Mode — let Mina help you take the first clear step.", route: "/stabilize" };
-}
-
-function deriveNextMove(data: OnboardingData): { label: string; detail: string; route: string } {
-  const hasCollectors = data.pressureSources.some(s => s.toLowerCase().includes("collector"));
-  const hasLegal = data.pressureSources.some(s => s.toLowerCase().includes("lawsuit") || s.toLowerCase().includes("legal"));
-  if (hasLegal) return { label: "Upload the most stressful notice you have received", detail: "Mina will analyze it and explain what it means and what you can do.", route: "/documents" };
-  if (hasCollectors) return { label: "Prepare for a collector call before it happens", detail: "Open a Live Call session. Practice what to say before the phone rings.", route: "/live-call" };
-  if (data.urgencyLevel >= 4) return { label: "Start Stabilize Mode", detail: "Your situation feels overwhelming. Mina will help you slow down and focus on one step.", route: "/stabilize" };
-  return { label: "Start Stabilize Mode", detail: "Begin with a calm conversation. Tell Mina what is on your mind right now.", route: "/stabilize" };
-}
-
-function derivePressureAreas(data: OnboardingData): PressureArea[] {
-  const hasCollectors = data.pressureSources.some(s => s.toLowerCase().includes("collector"));
-  const hasLegal = data.pressureSources.some(s => s.toLowerCase().includes("lawsuit") || s.toLowerCase().includes("legal"));
-  const highUrgency = data.urgencyLevel >= 4;
+function derivePressureAreas(d: OnboardingData): PressureArea[] {
+  const hasCollectors = d.pressureSources.some(s => s.toLowerCase().includes("collector"));
+  const hasLegal = d.pressureSources.some(s => s.toLowerCase().includes("lawsuit") || s.toLowerCase().includes("legal"));
+  const highUrgency = d.urgencyLevel >= 4;
   return [
-    { label: "Calls", status: hasCollectors ? (highUrgency ? "Act now" : "Needs attention") : "Clear", statusColor: hasCollectors ? (highUrgency ? "#ef4444" : "#f59e0b") : "#22c55e" },
-    { label: "Documents", status: data.pressureSources.length > 0 ? "Needs attention" : "Clear", statusColor: data.pressureSources.length > 0 ? "#f59e0b" : "#22c55e" },
-    { label: "Decisions", status: data.behaviorPatterns.some(b => b.toLowerCase().includes("panic") || b.toLowerCase().includes("agree")) ? "Watch" : "Clear", statusColor: data.behaviorPatterns.some(b => b.toLowerCase().includes("panic")) ? "#f97316" : "#22c55e" },
-    { label: "Legal risk", status: hasLegal ? "Act now" : data.fears.includes("Being sued") ? "Watch" : "Clear", statusColor: hasLegal ? "#ef4444" : data.fears.includes("Being sued") ? "#f97316" : "#22c55e" },
-    { label: "Recovery", status: "Needs attention", statusColor: "#f59e0b" },
+    { label: "Calls", status: hasCollectors ? (highUrgency ? "Act now" : "Needs attention") : "Clear", statusColor: hasCollectors ? (highUrgency ? "#ef4444" : "#f59e0b") : "#22c55e", route: "/live-call" },
+    { label: "Documents", status: d.pressureSources.length > 0 ? "Needs attention" : "Clear", statusColor: d.pressureSources.length > 0 ? "#f59e0b" : "#22c55e", route: "/documents" },
+    { label: "Decisions", status: d.behaviorPatterns.some(b => b.toLowerCase().includes("panic") || b.toLowerCase().includes("agree")) ? "Watch" : "Clear", statusColor: d.behaviorPatterns.some(b => b.toLowerCase().includes("panic")) ? "#f97316" : "#22c55e", route: "/decisions" },
+    { label: "Legal risk", status: hasLegal ? "Act now" : d.fears.includes("Being sued") ? "Watch" : "Clear", statusColor: hasLegal ? "#ef4444" : d.fears.includes("Being sued") ? "#f97316" : "#22c55e", route: "/legal-support" },
+    { label: "Recovery", status: "Needs attention", statusColor: "#f59e0b", route: "/recovery" },
   ];
 }
 
-function deriveBehaviorObservation(data: OnboardingData): string {
-  const avoider = data.behaviorPatterns.some(b => b.toLowerCase().includes("avoid") || b.toLowerCase().includes("ignore"));
-  const panicker = data.behaviorPatterns.some(b => b.toLowerCase().includes("panic") || b.toLowerCase().includes("agree quickly"));
-  const shutsDown = data.behaviorPatterns.some(b => b.toLowerCase().includes("shut down"));
-  const hasLegalFear = data.fears.includes("Being sued") || data.fears.includes("Wage garnishment");
-  const hasStepByStep = data.supportStyle.some(s => s.toLowerCase().includes("step"));
-  const hasFast = data.supportStyle.some(s => s.toLowerCase().includes("fast"));
-  const ashamed = data.hardestThings.some(h => h.toLowerCase().includes("ashamed"));
-
+function deriveBehaviorObservation(d: OnboardingData): string {
+  const avoider = d.behaviorPatterns.some(b => b.toLowerCase().includes("avoid") || b.toLowerCase().includes("ignore"));
+  const panicker = d.behaviorPatterns.some(b => b.toLowerCase().includes("panic") || b.toLowerCase().includes("agree quickly"));
+  const shutsDown = d.behaviorPatterns.some(b => b.toLowerCase().includes("shut down"));
+  const hasLegalFear = d.fears.includes("Being sued") || d.fears.includes("Wage garnishment");
+  const hasStepByStep = d.supportStyle.some(s => s.toLowerCase().includes("step"));
+  const hasFast = d.supportStyle.some(s => s.toLowerCase().includes("fast"));
+  const ashamed = d.hardestThings.some(h => h.toLowerCase().includes("ashamed"));
   if (avoider && hasLegalFear) return "You selected that pressure makes you avoid difficult conversations, and you shared that legal consequences worry you most. Mina will prioritize helping you understand your rights before any deadline arrives — so avoiding feels less necessary.";
   if (avoider) return "You selected that pressure makes you avoid calls and conversations. Mina will help you slow down before responding, so you can engage on your own terms instead of from fear.";
   if (panicker) return "You indicated that you tend to agree to things quickly under pressure. Mina will give you a pause phrase for every difficult conversation — one that buys you time without escalating the situation.";
@@ -192,19 +211,29 @@ const NEXT_MILESTONES: Record<string, string> = {
   Recover: "Maintain long-term financial control",
 };
 
+function deriveMemoryCards(d: OnboardingData, mainPressure: string, fearPattern: string, supportStyle: string, phase: CurrentPhase): MemoryCard[] {
+  const avoider = d.behaviorPatterns.some(b => b.toLowerCase().includes("avoid") || b.toLowerCase().includes("ignore"));
+  return [
+    { label: "Main pressure", value: mainPressure, evolutionLabel: d.pressureSources.length > 1 ? "Multiple sources tracked" : "Identified from onboarding" },
+    { label: "Fear pattern", value: fearPattern, evolutionLabel: avoider ? "Mina adjusts around this" : "Pattern becoming clearer" },
+    { label: "Support style", value: supportStyle, evolutionLabel: "Shapes every response" },
+    { label: "Current phase", value: phase, evolutionLabel: "Updates as you progress" },
+  ];
+}
+
 export function useDashboardData(): DashboardData {
-  const raw = useMemo(() => loadOnboarding(), []);
+  const raw = useMemo(() => load(), []);
   return useMemo(() => {
-    const pressureState = derivePressureState(raw.urgencyLevel);
+    const pressureState = raw.urgencyLevel <= 1 ? "Calm" : raw.urgencyLevel <= 2 ? "Rising" : raw.urgencyLevel <= 3 ? "High" : "Crisis" as PressureState;
     const phase = derivePhase(raw);
-    const rec = deriveRecommendation(raw);
-    const nextMove = deriveNextMove(raw);
+    const em = deriveEmotionalState(raw);
     const coach = deriveCoachInsight(raw);
+    const nba = deriveNextBestAction(raw);
     const journeyPhases = ["Stabilize", "Understand", "Protect", "Act", "Resolve", "Recover"];
     const currentJourneyIndex = Math.max(0, journeyPhases.indexOf(phase));
-    const mainPressure = raw.pressureSources.length > 0
-      ? raw.pressureSources.length === 1 ? raw.pressureSources[0] : `${raw.pressureSources.length} debt sources`
-      : "General financial pressure";
+    const mainPressure = raw.pressureSources.length > 0 ? (raw.pressureSources.length === 1 ? raw.pressureSources[0] : `${raw.pressureSources.length} debt sources`) : "General financial pressure";
+    const fearPattern = raw.fears.length > 0 ? raw.fears[0] : "Managing uncertainty";
+    const supportStyle = raw.supportStyle[0] ?? "Step-by-step guidance";
     return {
       firstName: "there",
       pressureState,
@@ -212,19 +241,17 @@ export function useDashboardData(): DashboardData {
       currentPhase: phase,
       coachInsight: coach.insight,
       coachFocus: coach.focus,
-      confidenceScore: deriveConfidence(raw),
-      recommendation: rec.text,
-      recommendedRoute: rec.route,
-      nextMoveLabel: nextMove.label,
-      nextMoveRoute: nextMove.route,
-      nextMoveDetail: nextMove.detail,
-      mainPressure,
-      fearPattern: raw.fears.length > 0 ? raw.fears[0] : "Managing uncertainty",
-      supportStyle: raw.supportStyle[0] ?? "Step-by-step guidance",
-      currentPhaseName: phase,
+      recommendation: nba.action,
+      recommendedRoute: nba.route,
+      nextBestAction: nba,
+      recoveryReadiness: deriveRecoveryReadiness(raw),
+      emotionalState: em.state,
+      emotionalStateColor: em.color,
+      memoryCards: deriveMemoryCards(raw, mainPressure, fearPattern, supportStyle, phase),
       pressureAreas: derivePressureAreas(raw),
       journeyPhases,
       currentJourneyIndex,
+      journeyProgress: Math.round((currentJourneyIndex / (journeyPhases.length - 1)) * 100),
       nextMilestoneName: NEXT_MILESTONES[journeyPhases[currentJourneyIndex]] ?? "",
       behaviorObservation: deriveBehaviorObservation(raw),
     };
