@@ -8,6 +8,7 @@ import PressureSection from "@/components/features/landing/PressureSection/Press
 import MinaSystemSection from "@/components/features/landing/MinaSystemSection/MinaSystemSection";
 import LiveCallSection from "@/components/features/landing/LiveCallSection/LiveCallSection";
 import LegalSupportSection from "@/components/features/landing/LegalSupportSection/LegalSupportSection";
+import PricingSection from "@/components/features/landing/PricingSection/PricingSection";
 import SupportChatWidget from "@/components/features/landing/SupportChatWidget/SupportChatWidget";
 import Footer from "@/components/features/landing/Footer/Footer";
 
@@ -19,8 +20,6 @@ export default function LandingPage() {
       style={{
         background: "var(--bg-base)",
         minHeight: "100vh",
-        // Design tokens applied globally via CSS variables
-        // These can also live in globals.css
         // @ts-ignore
         "--bg-base": "#090D1A",
         "--bg-card": "#111827",
@@ -39,9 +38,9 @@ export default function LandingPage() {
       <MinaSystemSection lang={lang} />
       <LiveCallSection lang={lang} />
       <LegalSupportSection lang={lang} />
+      <PricingSection lang={lang} />
       <SupportChatWidget lang={lang} />
       <Footer lang={lang} />
     </div>
   );
 }
-
