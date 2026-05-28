@@ -34,3 +34,4 @@ export default function LanguageToggle({ lang, onToggle, compact = false }: Lang
     </div>
   );
 }
+

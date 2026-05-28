@@ -53,3 +53,4 @@ export default function PressureGrid({ lang }: PressureGridProps) {
     </div>
   );
 }
+

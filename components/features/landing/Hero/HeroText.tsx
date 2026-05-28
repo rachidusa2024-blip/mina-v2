@@ -36,7 +36,7 @@ interface HeroTextProps {
 const fadeUp = (delay: number) => ({
   initial: { opacity: 0, y: 32 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] },
+  transition: { duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
 });
 
 export default function HeroText({ lang }: HeroTextProps) {
@@ -123,3 +123,4 @@ export default function HeroText({ lang }: HeroTextProps) {
     </div>
   );
 }
+

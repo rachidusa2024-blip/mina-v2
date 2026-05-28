@@ -68,3 +68,4 @@ export default function TrustBar({ lang }: TrustBarProps) {
     </div>
   );
 }
+

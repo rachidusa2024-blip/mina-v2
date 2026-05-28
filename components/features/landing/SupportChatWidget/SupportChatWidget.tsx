@@ -155,7 +155,7 @@ export default function SupportChatWidget({ lang }: SupportChatWidgetProps) {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+                    transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
                     style={{ overflow: "hidden" }}
                   >
                     <p
@@ -177,3 +177,4 @@ export default function SupportChatWidget({ lang }: SupportChatWidgetProps) {
     </section>
   );
 }
+

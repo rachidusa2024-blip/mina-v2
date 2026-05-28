@@ -121,3 +121,4 @@ export default function MobileMenu({ open, onClose, lang, onToggleLang }: Mobile
     </AnimatePresence>
   );
 }
+

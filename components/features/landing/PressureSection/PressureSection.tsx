@@ -46,3 +46,4 @@ export default function PressureSection({ lang }: PressureSectionProps) {
     </section>
   );
 }
+

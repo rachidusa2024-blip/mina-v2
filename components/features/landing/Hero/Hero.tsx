@@ -56,3 +56,4 @@ export default function Hero({ lang }: HeroProps) {
     </section>
   );
 }
+

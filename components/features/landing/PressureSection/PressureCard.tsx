@@ -15,7 +15,7 @@ export default function PressureCard({ icon: Icon, label, index }: PressureCardP
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
-      transition={{ duration: 0.5, delay: index * 0.07, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.5, delay: index * 0.07, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
       className="group flex flex-col items-center gap-3 p-5 rounded-2xl transition-all duration-200 cursor-default"
       style={{
         background: "var(--bg-card)",
@@ -52,3 +52,4 @@ export default function PressureCard({ icon: Icon, label, index }: PressureCardP
     </motion.div>
   );
 }
+

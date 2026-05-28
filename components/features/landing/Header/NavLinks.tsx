@@ -71,3 +71,4 @@ export default function NavLinks({ lang, onClose, vertical = false }: NavLinksPr
     </nav>
   );
 }
+

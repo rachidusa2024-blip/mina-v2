@@ -120,7 +120,7 @@ export default function CallSequence() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
           className="rounded-2xl p-4"
           style={{
             background: current.bg,
@@ -184,3 +184,4 @@ export default function CallSequence() {
     </div>
   );
 }
+
