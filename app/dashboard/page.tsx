@@ -3,6 +3,7 @@
 import { useDashboardData } from "@/components/features/dashboard/useDashboardData";
 import DashboardHeader from "@/components/features/dashboard/DashboardHeader";
 import MinaInsightHero from "@/components/features/dashboard/sections/MinaInsightHero";
+import SinceLastVisit from "@/components/features/dashboard/sections/SinceLastVisit";
 import NextBestAction from "@/components/features/dashboard/sections/NextBestAction";
 import RecoveryReadiness from "@/components/features/dashboard/sections/RecoveryReadiness";
 import LiveCallCenter from "@/components/features/dashboard/sections/LiveCallCenter";
@@ -22,7 +23,7 @@ export default function DashboardPage() {
       "--teal": "#00C9A7", "--teal-dim": "rgba(0,201,167,0.1)",
       "--gold": "#C9A84C", "--border": "rgba(255,255,255,0.08)",
     } as React.CSSProperties}>
-      <DashboardHeader firstName={d.firstName} />
+      <DashboardHeader firstName={d.firstName} currentPhase={d.currentPhase} />
       <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-20 pb-16 flex flex-col gap-8">
         <MinaInsightHero
           pressureState={d.pressureState} pressureStateColor={d.pressureStateColor}
@@ -31,6 +32,7 @@ export default function DashboardPage() {
           coachFocus={d.coachFocus} confidenceScore={0}
           recommendation={d.recommendation} recommendedRoute={d.recommendedRoute}
         />
+        <SinceLastVisit items={d.sinceLastVisitItems} />
         <NextBestAction {...d.nextBestAction} />
         <RecoveryReadiness score={d.recoveryReadiness} emotionalState={d.emotionalState} emotionalStateColor={d.emotionalStateColor} />
         <LiveCallCenter />
@@ -38,7 +40,7 @@ export default function DashboardPage() {
         <PressureMap areas={d.pressureAreas} />
         <Workspaces />
         <RecoveryJourney phases={d.journeyPhases} currentIndex={d.currentJourneyIndex} nextMilestoneName={d.nextMilestoneName} journeyProgress={d.journeyProgress} />
-        <MinaNoticed observation={d.behaviorObservation} />
+        <MinaNoticed observation={d.humanMoment} />
       </main>
     </div>
   );

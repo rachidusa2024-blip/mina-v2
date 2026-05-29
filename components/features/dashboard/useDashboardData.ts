@@ -8,50 +8,43 @@ export type CurrentPhase = "Stabilize" | "Protect" | "Act" | "Recover";
 export type EmotionalState = "Overwhelmed" | "Uncertain" | "Defensive" | "Preparing" | "Focused" | "Recovering";
 
 export interface PressureArea {
-  label: string;
-  status: string;
-  statusColor: string;
-  route: string;
+  label: string; status: string; statusColor: string; route: string;
 }
-
 export interface NextBestAction {
-  action: string;
-  estimatedTime: string;
-  impact: "High" | "Medium" | "Low";
-  reason: string;
-  route: string;
+  action: string; estimatedTime: string; impact: "High" | "Medium" | "Low";
+  reason: string; whyRecommends: string; route: string;
 }
-
 export interface MemoryCard {
-  label: string;
-  value: string;
-  evolutionLabel: string;
+  label: string; value: string; evolutionLabel: string; coachingNote: string;
+}
+export interface VisitUpdate {
+  text: string;
 }
 
 export interface DashboardData {
   firstName: string;
-  pressureState: PressureState;
-  pressureStateColor: string;
-  currentPhase: CurrentPhase;
-  // Structured coach voice — lines displayed separately
-  coachHeader: string;
-  coachLines: string[];
-  coachClosing: string;
-  coachFocus: string;
-  recommendation: string;
-  recommendedRoute: string;
+  pressureState: PressureState; pressureStateColor: string; currentPhase: CurrentPhase;
+  coachHeader: string; coachLines: string[]; coachClosing: string; coachFocus: string;
+  recommendation: string; recommendedRoute: string;
   nextBestAction: NextBestAction;
-  recoveryReadiness: number;
-  emotionalState: EmotionalState;
-  emotionalStateColor: string;
+  recoveryReadiness: number; emotionalState: EmotionalState; emotionalStateColor: string;
   memoryCards: MemoryCard[];
   pressureAreas: PressureArea[];
-  journeyPhases: string[];
-  currentJourneyIndex: number;
-  journeyProgress: number;
-  nextMilestoneName: string;
+  journeyPhases: string[]; currentJourneyIndex: number;
+  journeyProgress: number; nextMilestoneName: string;
   behaviorObservation: string;
+  sinceLastVisitItems: VisitUpdate[];
+  humanMoment: string;
 }
+
+const HUMAN_MOMENTS = [
+  "People often feel they must make decisions immediately. Most situations improve when you first understand the facts.",
+  "Debt collectors are trained to create urgency. That urgency is almost always manufactured. You have more time than they want you to think.",
+  "The goal today is not to solve everything. The goal is one clear step that makes tomorrow easier.",
+  "The heaviest part of financial pressure is not the debt itself. It is the weight of not knowing what to do. Mina is here to reduce that weight.",
+  "Most people in debt pressure are not bad with money. They are people who had something unexpected happen without enough protection in place. That is different.",
+  "You do not need to be fully ready before you take the next step. You just need to know what it is.",
+];
 
 function load(): OnboardingData {
   if (typeof window === "undefined") return initialOnboardingData;
@@ -99,82 +92,65 @@ function deriveReadiness(d: OnboardingData): number {
   return Math.min(s, 46);
 }
 
-// Structured 4-line coach voice
-function deriveCoachLines(d: OnboardingData): { header: string; lines: string[]; closing: string; focus: string } {
+function deriveCoach(d: OnboardingData): { header: string; lines: string[]; closing: string; focus: string } {
   const main = d.pressureSources.length > 0
-    ? d.pressureSources.length === 1
-      ? d.pressureSources[0].toLowerCase()
-      : `${d.pressureSources.length} overlapping debt sources`
+    ? d.pressureSources.length === 1 ? d.pressureSources[0].toLowerCase() : `${d.pressureSources.length} overlapping debt sources`
     : "financial uncertainty";
-
   const fear = d.fears.length > 0 ? d.fears[0].toLowerCase() : "making the wrong move";
   const style = d.supportStyle[0]?.toLowerCase() ?? "step-by-step guidance";
-
   const avoider = d.behaviorPatterns.some(b => b.toLowerCase().includes("avoid") || b.toLowerCase().includes("ignore"));
   const panicker = d.behaviorPatterns.some(b => b.toLowerCase().includes("panic") || b.toLowerCase().includes("agree"));
-  const shutsDown = d.behaviorPatterns.some(b => b.toLowerCase().includes("shut down"));
   const hasLegal = d.pressureSources.some(s => s.toLowerCase().includes("lawsuit") || s.toLowerCase().includes("legal"));
-
   const behaviorLine = avoider
     ? "You tend to step back from difficult conversations when pressure rises."
-    : panicker
-    ? "You tend to agree to things quickly before fully understanding what you are agreeing to."
-    : shutsDown
-    ? "You tend to shut down emotionally when too many pressures arrive at once."
+    : panicker ? "You tend to agree to things quickly before fully understanding what you are agreeing to."
     : "You prefer to understand the full situation before taking action.";
-
-  const fearLine = `You are most worried about ${fear}.`;
-
   const closingLine = hasLegal
     ? "That means Mina will help you understand every document and every deadline before you respond to anything."
-    : avoider
-    ? "That means Mina will prepare you before the pressure arrives — so you can respond on your terms, not from fear."
-    : panicker
-    ? "That means Mina will give you pause phrases for every difficult moment — so you stop before agreeing to anything."
+    : avoider ? "That means Mina will prepare you before the pressure arrives — so you can respond on your terms, not from fear."
+    : panicker ? "That means Mina will give you pause phrases for every difficult moment — so you stop before agreeing to anything."
     : `That means Mina will focus on ${style}, building your confidence before each decision.`;
-
   const focus = avoider ? "Prepare your response before the pressure arrives — not in the middle of it."
     : panicker ? "Practice pausing before responding. Silence is not agreement."
     : hasLegal ? "Do not ignore any legal notice. Upload it so Mina can explain exactly what it requires."
     : "Review what is causing the most pressure before taking any action.";
-
   return {
     header: "Based on what you told Mina:",
-    lines: [
-      `Your biggest source of pressure right now is ${main}.`,
-      behaviorLine,
-      fearLine,
-    ],
-    closing: closingLine,
-    focus,
+    lines: [`Your biggest source of pressure right now is ${main}.`, behaviorLine, `You are most worried about ${fear}.`],
+    closing: closingLine, focus,
   };
 }
 
-function deriveNBA(d: OnboardingData): NextBestAction {
+function deriveNBA(d: OnboardingData, main: string): NextBestAction {
   const hasLegal = d.pressureSources.some(s => s.toLowerCase().includes("lawsuit") || s.toLowerCase().includes("legal"));
   const hasCollectors = d.pressureSources.some(s => s.toLowerCase().includes("collector"));
+  const fear = d.fears[0]?.toLowerCase() ?? "uncertainty";
   if (hasLegal) return {
     action: "Upload the legal notice or summons you received.",
     estimatedTime: "3 minutes", impact: "High",
     reason: "Mina can identify deadlines, your rights under FDCPA and FCRA, and your response options — before any deadline passes.",
+    whyRecommends: `You mentioned ${fear} is one of your biggest fears. Uploading the legal document lets Mina identify exactly what is real, what the deadline is, and what your rights are — so you can make decisions based on facts instead of fear.`,
     route: "/documents",
   };
   if (hasCollectors) return {
     action: "Prepare your response before the next collector call.",
     estimatedTime: "5 minutes", impact: "High",
     reason: "Mina will give you exact phrases to use, help you recognize pressure tactics, and keep a record of what was said.",
+    whyRecommends: `You mentioned ${main} is creating the most pressure. Collector calls are designed to create urgency and panic. Having your response prepared in advance means you are never caught unprepared.`,
     route: "/live-call",
   };
   if (d.urgencyLevel >= 4) return {
     action: "Open Stabilize Mode and tell Mina what is weighing on you most.",
     estimatedTime: "3 minutes", impact: "High",
     reason: "When pressure is high, decisions made under stress are rarely the right ones. Mina will help you slow down before anything else.",
+    whyRecommends: `You indicated your situation feels overwhelming. Decisions made under high pressure are often the most costly. Stabilize Mode is designed to help you slow down, separate what is urgent from what can wait, and take one clear step.`,
     route: "/stabilize",
   };
   return {
     action: "Upload the most stressful letter or notice you have received.",
     estimatedTime: "3 minutes", impact: "Medium",
     reason: "Mina can identify deadlines, pressure tactics, and your response options — turning confusion into a clear next step.",
+    whyRecommends: `You mentioned ${fear} is a concern. Uploading the letter allows Mina to identify deadlines, threats, and next steps so you can make decisions based on facts instead of fear.`,
     route: "/documents",
   };
 }
@@ -183,8 +159,6 @@ function derivePressureAreas(d: OnboardingData): PressureArea[] {
   const hasCollectors = d.pressureSources.some(s => s.toLowerCase().includes("collector"));
   const hasLegal = d.pressureSources.some(s => s.toLowerCase().includes("lawsuit") || s.toLowerCase().includes("legal"));
   const high = d.urgencyLevel >= 4;
-  const statusColor = (c: string, w: string, cl: string) =>
-    c ? (high ? "#ef4444" : "#f59e0b") : w ? "#f97316" : "#22c55e";
   return [
     { label: "Calls", status: hasCollectors ? (high ? "Let's focus here now" : "Needs your attention") : "Looking good", statusColor: hasCollectors ? (high ? "#ef4444" : "#f59e0b") : "#22c55e", route: "/live-call" },
     { label: "What they sent you", status: d.pressureSources.length > 0 ? "Needs your attention" : "Looking good", statusColor: d.pressureSources.length > 0 ? "#f59e0b" : "#22c55e", route: "/documents" },
@@ -213,6 +187,40 @@ function deriveObservation(d: OnboardingData): string {
   return "Mina has built a picture of how you think and respond under pressure. Every recommendation going forward will be shaped around your actual patterns — not a generic plan.";
 }
 
+function deriveSinceLastVisit(d: OnboardingData, readiness: number): VisitUpdate[] {
+  const items: VisitUpdate[] = [
+    { text: "Mina has analyzed your pressure pattern and situation" },
+    { text: `Recovery readiness score is at ${readiness} — upload a document to increase it` },
+    { text: "One recommended action is ready for you below" },
+  ];
+  if (d.pressureSources.length > 1) {
+    items.push({ text: `${d.pressureSources.length} pressure sources have been identified and mapped` });
+  }
+  if (d.behaviorPatterns.length > 0) {
+    items.push({ text: "Mina has noted your response patterns and will adapt guidance accordingly" });
+  }
+  return items.slice(0, 4);
+}
+
+function deriveMemoryCards(d: OnboardingData, main: string, fear: string, style: string, phase: CurrentPhase): MemoryCard[] {
+  const avoider = d.behaviorPatterns.some(b => b.toLowerCase().includes("avoid") || b.toLowerCase().includes("ignore"));
+  const multi = d.pressureSources.length > 1;
+  return [
+    { label: "What you're carrying", value: multi ? `${d.pressureSources.length} sources of pressure` : main,
+      evolutionLabel: multi ? "Multiple sources tracked" : "Identified from your answers",
+      coachingNote: multi ? "Mina has noted this across multiple answers." : "This shapes where Mina focuses first." },
+    { label: "What worries you most", value: fear,
+      evolutionLabel: avoider ? "Mina works around this" : "Pattern becoming clearer",
+      coachingNote: "Mina has noticed this appears in multiple answers." },
+    { label: "How you need support", value: style,
+      evolutionLabel: "Shapes every response",
+      coachingNote: "This shapes how Mina responds to you." },
+    { label: "Where you are now", value: phase,
+      evolutionLabel: "How far you have come",
+      coachingNote: "Updates as you take action." },
+  ];
+}
+
 const NEXT_MILESTONES: Record<string, string> = {
   Stabilize: "Understand what is creating the most pressure",
   Understand: "Identify your position and protect it",
@@ -222,68 +230,38 @@ const NEXT_MILESTONES: Record<string, string> = {
   Recover: "Maintain the control you have built",
 };
 
-function deriveMemoryCards(d: OnboardingData, main: string, fear: string, style: string, phase: CurrentPhase): MemoryCard[] {
-  const avoider = d.behaviorPatterns.some(b => b.toLowerCase().includes("avoid") || b.toLowerCase().includes("ignore"));
-  const multiSource = d.pressureSources.length > 1;
-  return [
-    {
-      label: "What you're carrying",
-      value: multiSource ? `${d.pressureSources.length} sources of pressure` : main,
-      evolutionLabel: multiSource ? "Multiple sources tracked" : "Identified from your answers",
-    },
-    {
-      label: "What worries you most",
-      value: fear,
-      evolutionLabel: avoider ? "Mina works around this" : "Pattern becoming clearer",
-    },
-    {
-      label: "How you need support",
-      value: style,
-      evolutionLabel: "Shapes every response",
-    },
-    {
-      label: "Where you are now",
-      value: phase,
-      evolutionLabel: "How far you have come",
-    },
-  ];
-}
-
 export function useDashboardData(): DashboardData {
   const raw = useMemo(() => load(), []);
   return useMemo(() => {
     const pressureState = (raw.urgencyLevel <= 1 ? "Calm" : raw.urgencyLevel <= 2 ? "Rising" : raw.urgencyLevel <= 3 ? "High" : "Crisis") as PressureState;
     const phase = derivePhase(raw);
     const em = deriveEmotional(raw);
-    const coach = deriveCoachLines(raw);
-    const nba = deriveNBA(raw);
+    const coach = deriveCoach(raw);
     const journeyPhases = ["Stabilize", "Understand", "Protect", "Act", "Resolve", "Recover"];
     const currentJourneyIndex = Math.max(0, journeyPhases.indexOf(phase));
     const mainPressure = raw.pressureSources.length > 0 ? (raw.pressureSources.length === 1 ? raw.pressureSources[0] : `${raw.pressureSources.length} debt sources`) : "General financial pressure";
     const fearPattern = raw.fears.length > 0 ? raw.fears[0] : "Managing uncertainty";
     const supportStyle = raw.supportStyle[0] ?? "Step-by-step guidance";
+    const readiness = deriveReadiness(raw);
+    const momentIndex = typeof Date !== "undefined" ? new Date().getDate() % HUMAN_MOMENTS.length : 0;
     return {
       firstName: "there",
-      pressureState,
-      pressureStateColor: STATE_COLOR[pressureState],
+      pressureState, pressureStateColor: STATE_COLOR[pressureState],
       currentPhase: phase,
-      coachHeader: coach.header,
-      coachLines: coach.lines,
-      coachClosing: coach.closing,
-      coachFocus: coach.focus,
-      recommendation: nba.action,
-      recommendedRoute: nba.route,
-      nextBestAction: nba,
-      recoveryReadiness: deriveReadiness(raw),
-      emotionalState: em.state,
-      emotionalStateColor: em.color,
+      coachHeader: coach.header, coachLines: coach.lines, coachClosing: coach.closing, coachFocus: coach.focus,
+      recommendation: deriveNBA(raw, mainPressure).action,
+      recommendedRoute: deriveNBA(raw, mainPressure).route,
+      nextBestAction: deriveNBA(raw, mainPressure),
+      recoveryReadiness: readiness,
+      emotionalState: em.state, emotionalStateColor: em.color,
       memoryCards: deriveMemoryCards(raw, mainPressure, fearPattern, supportStyle, phase),
       pressureAreas: derivePressureAreas(raw),
-      journeyPhases,
-      currentJourneyIndex,
+      journeyPhases, currentJourneyIndex,
       journeyProgress: Math.round((currentJourneyIndex / (journeyPhases.length - 1)) * 100),
       nextMilestoneName: NEXT_MILESTONES[journeyPhases[currentJourneyIndex]] ?? "",
       behaviorObservation: deriveObservation(raw),
+      sinceLastVisitItems: deriveSinceLastVisit(raw, readiness),
+      humanMoment: HUMAN_MOMENTS[momentIndex],
     };
   }, [raw]);
 }

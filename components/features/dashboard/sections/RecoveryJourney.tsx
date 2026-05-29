@@ -3,17 +3,23 @@
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 
+const PHASE_SUBTITLES: Record<string, string> = {
+  Stabilize: "Slow the panic",
+  Understand: "Know what is real",
+  Protect: "Avoid costly mistakes",
+  Act: "Take control",
+  Resolve: "Reduce the pressure",
+  Recover: "Rebuild confidence",
+};
+
 interface RecoveryJourneyProps {
-  phases: string[];
-  currentIndex: number;
-  nextMilestoneName: string;
-  journeyProgress: number;
+  phases: string[]; currentIndex: number;
+  nextMilestoneName: string; journeyProgress: number;
 }
 
 export default function RecoveryJourney({ phases, currentIndex, nextMilestoneName, journeyProgress }: RecoveryJourneyProps) {
   const currentPhase = phases[currentIndex];
   const nextPhase = phases[currentIndex + 1];
-
   return (
     <section className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
@@ -40,32 +46,27 @@ export default function RecoveryJourney({ phases, currentIndex, nextMilestoneNam
             )}
           </div>
           <div className="flex flex-col items-end gap-0.5">
-            <span className="text-xs" style={{ fontFamily: "'DM Sans', sans-serif", color: "var(--text-muted)" }}>
-              How far you have come
-            </span>
-            <span className="text-xl font-bold" style={{ fontFamily: "'DM Sans', sans-serif", color: "var(--teal)" }}>
-              {journeyProgress}%
-            </span>
+            <span className="text-xs" style={{ fontFamily: "'DM Sans', sans-serif", color: "var(--text-muted)" }}>How far you have come</span>
+            <span className="text-xl font-bold" style={{ fontFamily: "'DM Sans', sans-serif", color: "var(--teal)" }}>{journeyProgress}%</span>
           </div>
         </div>
 
-        {/* Progress bar */}
         <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
           <motion.div initial={{ width: 0 }} animate={{ width: `${Math.max(journeyProgress, 4)}%` }}
             transition={{ duration: 1.2, delay: 0.2, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
-            className="h-full rounded-full"
-            style={{ background: "linear-gradient(to right, rgba(0,201,167,0.5), var(--teal))" }} />
+            className="h-full rounded-full" style={{ background: "linear-gradient(to right, rgba(0,201,167,0.5), var(--teal))" }} />
         </div>
 
-        {/* Desktop path */}
+        {/* Desktop */}
         <div className="hidden sm:flex items-start gap-0">
           {phases.map((phase, i) => {
             const isPast = i < currentIndex;
             const isCurrent = i === currentIndex;
+            const sub = PHASE_SUBTITLES[phase] ?? "";
             return (
               <div key={phase} className="flex items-center flex-1">
-                <div className="flex flex-col items-center gap-2 flex-shrink-0">
-                  <div className="h-5 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-1 flex-shrink-0">
+                  <div className="h-4 flex items-center justify-center">
                     {isCurrent && (
                       <motion.div className="w-1.5 h-1.5 rounded-full" animate={{ opacity: [0.4, 1, 0.4] }}
                         transition={{ duration: 1.5, repeat: Infinity }} style={{ background: "var(--teal)" }} />
@@ -86,13 +87,20 @@ export default function RecoveryJourney({ phases, currentIndex, nextMilestoneNam
                         : <div className="w-1.5 h-1.5 rounded-full" style={{ background: isCurrent ? "var(--teal)" : "rgba(255,255,255,0.12)" }} />}
                     </motion.div>
                   </div>
-                  <span className="text-xs font-semibold text-center whitespace-nowrap"
-                    style={{ fontFamily: "'DM Sans', sans-serif", color: isCurrent ? "var(--teal)" : isPast ? "var(--text-muted)" : "rgba(136,146,164,0.28)" }}>
-                    {phase}
-                  </span>
+                  <div className="flex flex-col items-center gap-0.5 mt-1">
+                    <span className="text-xs font-semibold text-center whitespace-nowrap"
+                      style={{ fontFamily: "'DM Sans', sans-serif", color: isCurrent ? "var(--teal)" : isPast ? "var(--text-muted)" : "rgba(136,146,164,0.28)" }}>
+                      {phase}
+                    </span>
+                    <span className="text-xs text-center whitespace-nowrap"
+                      style={{ fontFamily: "'DM Sans', sans-serif", color: isCurrent ? "rgba(0,201,167,0.6)" : "rgba(136,146,164,0.2)", fontSize: "10px" }}>
+                      {sub}
+                    </span>
+                  </div>
                 </div>
                 {i < phases.length - 1 && (
-                  <div className="flex-1 h-0.5 mx-1 mt-5" style={{ background: isPast ? "var(--teal)" : "rgba(255,255,255,0.06)" }} />
+                  <div className="flex-1 h-0.5 mx-1 mt-4"
+                    style={{ background: isPast ? "var(--teal)" : "rgba(255,255,255,0.06)" }} />
                 )}
               </div>
             );
@@ -104,6 +112,7 @@ export default function RecoveryJourney({ phases, currentIndex, nextMilestoneNam
           {phases.map((phase, i) => {
             const isPast = i < currentIndex;
             const isCurrent = i === currentIndex;
+            const sub = PHASE_SUBTITLES[phase] ?? "";
             return (
               <div key={phase} className="flex items-center gap-3">
                 <div className="relative">
@@ -119,10 +128,16 @@ export default function RecoveryJourney({ phases, currentIndex, nextMilestoneNam
                       : <div className="w-1.5 h-1.5 rounded-full" style={{ background: isCurrent ? "var(--teal)" : "rgba(255,255,255,0.12)" }} />}
                   </div>
                 </div>
-                <span className="text-sm font-medium flex-1"
-                  style={{ fontFamily: "'DM Sans', sans-serif", color: isCurrent ? "var(--teal)" : isPast ? "var(--text-muted)" : "rgba(136,146,164,0.28)" }}>
-                  {phase}
-                </span>
+                <div className="flex-1">
+                  <span className="text-sm font-medium"
+                    style={{ fontFamily: "'DM Sans', sans-serif", color: isCurrent ? "var(--teal)" : isPast ? "var(--text-muted)" : "rgba(136,146,164,0.28)" }}>
+                    {phase}
+                  </span>
+                  <span className="text-xs block"
+                    style={{ fontFamily: "'DM Sans', sans-serif", color: isCurrent ? "rgba(0,201,167,0.5)" : "rgba(136,146,164,0.2)" }}>
+                    {sub}
+                  </span>
+                </div>
                 {isCurrent && (
                   <span className="text-xs font-bold px-2 py-0.5 rounded-full"
                     style={{ fontFamily: "'DM Sans', sans-serif", background: "rgba(0,201,167,0.1)", color: "var(--teal)" }}>

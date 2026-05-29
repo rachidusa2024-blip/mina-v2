@@ -16,7 +16,7 @@ export default function MinaMemory({ memoryCards }: MinaMemoryProps) {
         <div className="h-px flex-1" style={{ background: "var(--border)" }} />
         <span className="text-xs font-semibold tracking-widest uppercase px-3"
           style={{ fontFamily: "'DM Sans', sans-serif", color: "var(--text-muted)" }}>
-          Mina Memory
+          What Mina remembers
         </span>
         <div className="h-px flex-1" style={{ background: "var(--border)" }} />
       </div>
@@ -26,8 +26,7 @@ export default function MinaMemory({ memoryCards }: MinaMemoryProps) {
           const color = COLORS[i];
           return (
             <motion.div key={card.label}
-              initial={{ opacity: 0, y: 16 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.45, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
               className="flex flex-col gap-3 p-4 rounded-2xl"
@@ -35,7 +34,7 @@ export default function MinaMemory({ memoryCards }: MinaMemoryProps) {
               <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${color}1a` }}>
                 <Icon size={16} style={{ color }} />
               </div>
-              <div className="flex flex-col gap-0.5">
+              <div className="flex flex-col gap-1">
                 <p className="text-xs font-semibold uppercase tracking-wide"
                   style={{ fontFamily: "'DM Sans', sans-serif", color }}>
                   {card.label}
@@ -44,11 +43,12 @@ export default function MinaMemory({ memoryCards }: MinaMemoryProps) {
                   style={{ fontFamily: "'DM Sans', sans-serif", color: "var(--text-prime)" }}>
                   {card.value}
                 </p>
-                <p className="text-xs mt-1"
-                  style={{ fontFamily: "'DM Sans', sans-serif", color: `${color}70` }}>
-                  {card.evolutionLabel}
-                </p>
               </div>
+              {/* Coaching note */}
+              <p className="text-xs leading-relaxed"
+                style={{ fontFamily: "'DM Sans', sans-serif", color: `${color}80`, borderTop: `1px solid ${color}18`, paddingTop: "8px" }}>
+                {card.coachingNote}
+              </p>
             </motion.div>
           );
         })}
