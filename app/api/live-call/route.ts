@@ -38,11 +38,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unexpected response" }, { status: 500 });
     }
 
-    // Parse response
+    // Parse response line by line (avoids s-flag ES2018 requirement)
     const text = content.text;
-    const tacticMatch = text.match(/TACTIC:\s*(.+)/);
-    const sayMatch = text.match(/SAY THIS:\s*"?(.+?)"?\s*(?:NOTE:|$)/s);
-    const noteMatch = text.match(/NOTE:\s*(.+)/);
+    const lines = text.split("\n").map((l: string) => l.trim()).filter(Boolean);
+    const tacticLine = lines.find((l: string) => l.startsWith("TACTIC:")) ?? "";
+    const sayLine = lines.find((l: string) => l.startsWith("SAY THIS:")) ?? "";
+    const noteLine = lines.find((l: string) => l.startsWith("NOTE:")) ?? "";
+    const tacticMatch = tacticLine ? [null, tacticLine.replace(/^TACTIC:\s*/, "")] : null;
+    const sayMatch = sayLine ? [null, sayLine.replace(/^SAY THIS:\s*/, "").replace(/^"/, "").replace(/"$/, "")] : null;
+    const noteMatch = noteLine ? [null, noteLine.replace(/^NOTE:\s*/, "")] : null;
 
     return NextResponse.json({
       tactic: tacticMatch?.[1]?.trim() ?? "Analyzing...",
