@@ -17,9 +17,7 @@ export interface NextBestAction {
 export interface MemoryCard {
   label: string; value: string; evolutionLabel: string; coachingNote: string;
 }
-export interface VisitUpdate {
-  text: string;
-}
+export interface VisitUpdate { text: string; }
 
 export interface DashboardData {
   firstName: string;
@@ -37,12 +35,13 @@ export interface DashboardData {
   humanMoment: string;
 }
 
+// Rotates daily — a coach thought, not a system message
 const HUMAN_MOMENTS = [
   "People often feel they must make decisions immediately. Most situations improve when you first understand the facts.",
   "Debt collectors are trained to create urgency. That urgency is almost always manufactured. You have more time than they want you to think.",
   "The goal today is not to solve everything. The goal is one clear step that makes tomorrow easier.",
-  "The heaviest part of financial pressure is not the debt itself. It is the weight of not knowing what to do. Mina is here to reduce that weight.",
-  "Most people in debt pressure are not bad with money. They are people who had something unexpected happen without enough protection in place. That is different.",
+  "The heaviest part of financial pressure is not the debt itself. It is the weight of not knowing what to do next.",
+  "Most people in debt pressure are not bad with money. They are people who had something unexpected happen without enough protection in place.",
   "You do not need to be fully ready before you take the next step. You just need to know what it is.",
 ];
 
@@ -92,65 +91,130 @@ function deriveReadiness(d: OnboardingData): number {
   return Math.min(s, 46);
 }
 
+// ── MINA'S READ — pure emotional/behavioral interpretation ────────────────────
+// Answers: "What is happening to me?"
+// No recommendations. No action suggestions. Pure reading of the situation.
 function deriveCoach(d: OnboardingData): { header: string; lines: string[]; closing: string; focus: string } {
-  const main = d.pressureSources.length > 0
-    ? d.pressureSources.length === 1 ? d.pressureSources[0].toLowerCase() : `${d.pressureSources.length} overlapping debt sources`
-    : "financial uncertainty";
-  const fear = d.fears.length > 0 ? d.fears[0].toLowerCase() : "making the wrong move";
-  const style = d.supportStyle[0]?.toLowerCase() ?? "step-by-step guidance";
   const avoider = d.behaviorPatterns.some(b => b.toLowerCase().includes("avoid") || b.toLowerCase().includes("ignore"));
   const panicker = d.behaviorPatterns.some(b => b.toLowerCase().includes("panic") || b.toLowerCase().includes("agree"));
+  const shutsDown = d.behaviorPatterns.some(b => b.toLowerCase().includes("shut down"));
   const hasLegal = d.pressureSources.some(s => s.toLowerCase().includes("lawsuit") || s.toLowerCase().includes("legal"));
+  const multiSource = d.pressureSources.length > 1;
+  const highUrgency = d.urgencyLevel >= 4;
+
+  // Line 1: what the situation feels like right now
+  const situationLine = highUrgency
+    ? "The pressure you are carrying right now is high enough that decisions feel dangerous — like every move could make things worse."
+    : hasLegal
+    ? "Legal pressure creates a specific kind of freeze. Every action feels risky because the consequences feel final."
+    : multiSource
+    ? "Carrying multiple debt sources at once makes it hard to know which one deserves attention first — so it can feel like nothing is moving."
+    : "The pressure you are under is real. It is not just about money — it is about the weight of not knowing what happens next.";
+
+  // Line 2: what Mina observes behaviorally
   const behaviorLine = avoider
-    ? "You tend to step back from difficult conversations when pressure rises."
-    : panicker ? "You tend to agree to things quickly before fully understanding what you are agreeing to."
-    : "You prefer to understand the full situation before taking action.";
-  const closingLine = hasLegal
-    ? "That means Mina will help you understand every document and every deadline before you respond to anything."
-    : avoider ? "That means Mina will prepare you before the pressure arrives — so you can respond on your terms, not from fear."
-    : panicker ? "That means Mina will give you pause phrases for every difficult moment — so you stop before agreeing to anything."
-    : `That means Mina will focus on ${style}, building your confidence before each decision.`;
-  const focus = avoider ? "Prepare your response before the pressure arrives — not in the middle of it."
-    : panicker ? "Practice pausing before responding. Silence is not agreement."
-    : hasLegal ? "Do not ignore any legal notice. Upload it so Mina can explain exactly what it requires."
-    : "Review what is causing the most pressure before taking any action.";
+    ? "Under this kind of pressure, stepping back from difficult conversations is a natural response. It is the mind protecting itself from the cost of being wrong."
+    : panicker
+    ? "Under pressure, the impulse to respond quickly — to just agree and make the stress stop — is extremely common. It is not weakness. It is what urgency does to decision-making."
+    : shutsDown
+    ? "When too many pressures converge, shutting down emotionally is not avoidance. It is the brain trying to prevent overload."
+    : "The instinct to fully understand a situation before acting is not hesitation. It is how careful people protect themselves from costly mistakes.";
+
+  // Line 3: the emotional core of what is happening
+  const emotionLine = d.fears.includes("Being sued") || d.fears.includes("Wage garnishment")
+    ? "Underneath the pressure is a specific fear: that one wrong move will trigger something irreversible. That fear is real, but the situation has more room than it feels like right now."
+    : d.hardestThings.includes("I feel ashamed")
+    ? "There is also shame in this — the kind that makes people feel like they caused this and deserve what is happening. That story is not accurate."
+    : d.hardestThings.some(h => h.toLowerCase().includes("clearly"))
+    ? "One effect of sustained pressure is that thinking becomes cloudy. Decisions that should be simple start to feel impossible."
+    : "The emotional weight here is not just about debt. It is about feeling like you lost control of something that should have been manageable.";
+
+  // Closing: what this means for Mina's approach (not a recommendation — an orientation)
+  const closing = avoider
+    ? "Mina's role is not to push you into action. It is to help you understand what is safe before you engage."
+    : panicker
+    ? "Mina's role is not to tell you what to do. It is to slow the moment down so the decision is yours — not the caller's."
+    : hasLegal
+    ? "Mina's role here is to help you separate what is urgent from what is fear — so you can respond with clarity instead of panic."
+    : "Mina's role is to help you think clearly in a situation designed to prevent that.";
+
+  const focus = avoider ? "Notice when avoidance feels like protection. That is the moment to pause before deciding."
+    : panicker ? "Before responding to any financial request today, take 10 seconds. Urgency is almost always manufactured."
+    : hasLegal ? "Do not respond to anything legal until you understand what it actually requires."
+    : "Identify the single thing creating the most pressure. Everything else can wait.";
+
   return {
-    header: "Based on what you told Mina:",
-    lines: [`Your biggest source of pressure right now is ${main}.`, behaviorLine, `You are most worried about ${fear}.`],
-    closing: closingLine, focus,
+    header: "What Mina sees:",
+    lines: [situationLine, behaviorLine, emotionLine],
+    closing,
+    focus,
   };
 }
 
-function deriveNBA(d: OnboardingData, main: string): NextBestAction {
+// ── SINCE YOUR LAST VISIT — pure progress ─────────────────────────────────────
+// Answers: "What changed?"
+// No emotional observations. No interpretations. Only progress, completions, new availability.
+function deriveSinceLastVisit(d: OnboardingData, readiness: number): VisitUpdate[] {
+  const items: VisitUpdate[] = [];
+
+  // Completion of onboarding
+  const completedSections = [
+    d.pressureSources.length > 0,
+    d.hardestThings.length > 0,
+    d.fears.length > 0,
+    d.behaviorPatterns.length > 0,
+    d.supportStyle.length > 0,
+  ].filter(Boolean).length;
+
+  items.push({ text: `Onboarding complete — ${completedSections} of 5 sections answered` });
+  items.push({ text: `Recovery readiness baseline set at ${readiness}/100` });
+  items.push({ text: "Your pressure map has been built and is ready to review" });
+
+  if (d.pressureSources.length > 0) {
+    items.push({
+      text: `${d.pressureSources.length} pressure source${d.pressureSources.length > 1 ? "s have" : " has"} been identified and mapped`,
+    });
+  }
+
+  return items.slice(0, 4);
+}
+
+// ── NEXT BEST ACTION — pure decision logic ────────────────────────────────────
+// Answers: "Why should I do this now?"
+// No emotional observations. Explains leverage, timing, and consequence of not acting.
+function deriveNBA(d: OnboardingData): NextBestAction {
   const hasLegal = d.pressureSources.some(s => s.toLowerCase().includes("lawsuit") || s.toLowerCase().includes("legal"));
   const hasCollectors = d.pressureSources.some(s => s.toLowerCase().includes("collector"));
-  const fear = d.fears[0]?.toLowerCase() ?? "uncertainty";
+
   if (hasLegal) return {
     action: "Upload the legal notice or summons you received.",
     estimatedTime: "3 minutes", impact: "High",
-    reason: "Mina can identify deadlines, your rights under FDCPA and FCRA, and your response options — before any deadline passes.",
-    whyRecommends: `You mentioned ${fear} is one of your biggest fears. Uploading the legal document lets Mina identify exactly what is real, what the deadline is, and what your rights are — so you can make decisions based on facts instead of fear.`,
+    reason: "Mina can identify deadlines, your rights under FDCPA and FCRA, and your response options before any deadline passes.",
+    whyRecommends: "Legal documents have hard deadlines. Letting one pass without response — even accidentally — can result in a default judgment. This is the action with the highest consequence of delay. Three minutes now eliminates that risk.",
     route: "/documents",
   };
+
   if (hasCollectors) return {
     action: "Prepare your response before the next collector call.",
     estimatedTime: "5 minutes", impact: "High",
-    reason: "Mina will give you exact phrases to use, help you recognize pressure tactics, and keep a record of what was said.",
-    whyRecommends: `You mentioned ${main} is creating the most pressure. Collector calls are designed to create urgency and panic. Having your response prepared in advance means you are never caught unprepared.`,
+    reason: "Mina will give you exact phrases to use, help you identify pressure tactics, and keep a record of what was said.",
+    whyRecommends: "Collector calls are scripted to produce agreements under stress. The only way to avoid that is to have your response ready before the call — not during it. Five minutes of preparation eliminates the most common mistake in debt situations.",
     route: "/live-call",
   };
+
   if (d.urgencyLevel >= 4) return {
     action: "Open Stabilize Mode and tell Mina what is weighing on you most.",
     estimatedTime: "3 minutes", impact: "High",
-    reason: "When pressure is high, decisions made under stress are rarely the right ones. Mina will help you slow down before anything else.",
-    whyRecommends: `You indicated your situation feels overwhelming. Decisions made under high pressure are often the most costly. Stabilize Mode is designed to help you slow down, separate what is urgent from what can wait, and take one clear step.`,
+    reason: "When pressure is high, Mina will help you identify what is actually urgent versus what only feels urgent.",
+    whyRecommends: "High pressure distorts urgency. Things that can wait feel like emergencies. Things that are actually urgent get avoided. Stabilize Mode is designed specifically for this — separating real risk from perceived risk so your next action is the right one, not just the one that relieves anxiety.",
     route: "/stabilize",
   };
+
   return {
     action: "Upload the most stressful letter or notice you have received.",
     estimatedTime: "3 minutes", impact: "Medium",
-    reason: "Mina can identify deadlines, pressure tactics, and your response options — turning confusion into a clear next step.",
-    whyRecommends: `You mentioned ${fear} is a concern. Uploading the letter allows Mina to identify deadlines, threats, and next steps so you can make decisions based on facts instead of fear.`,
+    reason: "Mina can identify deadlines, pressure tactics, and your response options.",
+    whyRecommends: "Unread or misunderstood documents are one of the most common sources of ongoing anxiety in debt situations. Once Mina analyzes it, the uncertainty disappears — and uncertainty is currently doing more damage than the document itself.",
     route: "/documents",
   };
 }
@@ -173,9 +237,9 @@ function deriveObservation(d: OnboardingData): string {
   const panicker = d.behaviorPatterns.some(b => b.toLowerCase().includes("panic") || b.toLowerCase().includes("agree quickly"));
   const shutsDown = d.behaviorPatterns.some(b => b.toLowerCase().includes("shut down"));
   const hasLegalFear = d.fears.includes("Being sued") || d.fears.includes("Wage garnishment");
+  const ashamed = d.hardestThings.some(h => h.toLowerCase().includes("ashamed"));
   const hasStepByStep = d.supportStyle.some(s => s.toLowerCase().includes("step"));
   const hasFast = d.supportStyle.some(s => s.toLowerCase().includes("fast"));
-  const ashamed = d.hardestThings.some(h => h.toLowerCase().includes("ashamed"));
   if (avoider && hasLegalFear) return "You carry two things at once: a tendency to avoid difficult conversations, and a fear of what happens if things escalate legally. Mina will focus on helping you understand your rights early — before avoiding feels like the only option.";
   if (avoider) return "You selected that pressure makes you step back from difficult conversations. Mina will help you prepare before the pressure arrives — so you can engage when you are ready, not when you are afraid.";
   if (panicker) return "You tend to agree to things quickly when under pressure. Mina will interrupt that pattern — giving you a phrase to pause the conversation before you commit to anything.";
@@ -185,21 +249,6 @@ function deriveObservation(d: OnboardingData): string {
   if (hasStepByStep) return "You asked for step-by-step guidance. That is how Mina will work with you — one clear action at a time, nothing rushed, nothing vague.";
   if (hasFast) return "You asked for direct answers. Mina will lead with what matters most and keep explanations short — unless you want to go deeper.";
   return "Mina has built a picture of how you think and respond under pressure. Every recommendation going forward will be shaped around your actual patterns — not a generic plan.";
-}
-
-function deriveSinceLastVisit(d: OnboardingData, readiness: number): VisitUpdate[] {
-  const items: VisitUpdate[] = [
-    { text: "Mina has analyzed your pressure pattern and situation" },
-    { text: `Recovery readiness score is at ${readiness} — upload a document to increase it` },
-    { text: "One recommended action is ready for you below" },
-  ];
-  if (d.pressureSources.length > 1) {
-    items.push({ text: `${d.pressureSources.length} pressure sources have been identified and mapped` });
-  }
-  if (d.behaviorPatterns.length > 0) {
-    items.push({ text: "Mina has noted your response patterns and will adapt guidance accordingly" });
-  }
-  return items.slice(0, 4);
 }
 
 function deriveMemoryCards(d: OnboardingData, main: string, fear: string, style: string, phase: CurrentPhase): MemoryCard[] {
@@ -237,23 +286,23 @@ export function useDashboardData(): DashboardData {
     const phase = derivePhase(raw);
     const em = deriveEmotional(raw);
     const coach = deriveCoach(raw);
+    const nba = deriveNBA(raw);
     const journeyPhases = ["Stabilize", "Understand", "Protect", "Act", "Resolve", "Recover"];
     const currentJourneyIndex = Math.max(0, journeyPhases.indexOf(phase));
-    const mainPressure = raw.pressureSources.length > 0 ? (raw.pressureSources.length === 1 ? raw.pressureSources[0] : `${raw.pressureSources.length} debt sources`) : "General financial pressure";
+    const mainPressure = raw.pressureSources.length > 0
+      ? raw.pressureSources.length === 1 ? raw.pressureSources[0] : `${raw.pressureSources.length} debt sources`
+      : "General financial pressure";
     const fearPattern = raw.fears.length > 0 ? raw.fears[0] : "Managing uncertainty";
     const supportStyle = raw.supportStyle[0] ?? "Step-by-step guidance";
     const readiness = deriveReadiness(raw);
     const momentIndex = typeof Date !== "undefined" ? new Date().getDate() % HUMAN_MOMENTS.length : 0;
     return {
       firstName: "there",
-      pressureState, pressureStateColor: STATE_COLOR[pressureState],
-      currentPhase: phase,
+      pressureState, pressureStateColor: STATE_COLOR[pressureState], currentPhase: phase,
       coachHeader: coach.header, coachLines: coach.lines, coachClosing: coach.closing, coachFocus: coach.focus,
-      recommendation: deriveNBA(raw, mainPressure).action,
-      recommendedRoute: deriveNBA(raw, mainPressure).route,
-      nextBestAction: deriveNBA(raw, mainPressure),
-      recoveryReadiness: readiness,
-      emotionalState: em.state, emotionalStateColor: em.color,
+      recommendation: nba.action, recommendedRoute: nba.route,
+      nextBestAction: nba,
+      recoveryReadiness: readiness, emotionalState: em.state, emotionalStateColor: em.color,
       memoryCards: deriveMemoryCards(raw, mainPressure, fearPattern, supportStyle, phase),
       pressureAreas: derivePressureAreas(raw),
       journeyPhases, currentJourneyIndex,
