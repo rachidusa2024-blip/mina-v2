@@ -13,64 +13,32 @@ import RecoveryJourney from "@/components/features/dashboard/sections/RecoveryJo
 import MinaNoticed from "@/components/features/dashboard/sections/MinaNoticed";
 
 export default function DashboardPage() {
-  const data = useDashboardData();
+  const d = useDashboardData();
   return (
-    <div style={{
-      background: "var(--bg-base)", minHeight: "100vh",
+    <div style={{ background: "var(--bg-base)", minHeight: "100vh",
       // @ts-ignore
       "--bg-base": "#090D1A", "--bg-card": "#111827",
       "--text-prime": "#F0F4FF", "--text-muted": "#8892A4",
       "--teal": "#00C9A7", "--teal-dim": "rgba(0,201,167,0.1)",
       "--gold": "#C9A84C", "--border": "rgba(255,255,255,0.08)",
     } as React.CSSProperties}>
-      <DashboardHeader firstName={data.firstName} />
+      <DashboardHeader firstName={d.firstName} />
       <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-20 pb-16 flex flex-col gap-8">
-
-        {/* 1. Mina's Read */}
         <MinaInsightHero
-          pressureState={data.pressureState}
-          pressureStateColor={data.pressureStateColor}
-          currentPhase={data.currentPhase}
-          coachInsight={data.coachInsight}
-          coachFocus={data.coachFocus}
-          confidenceScore={0}
-          recommendation={data.recommendation}
-          recommendedRoute={data.recommendedRoute}
+          pressureState={d.pressureState} pressureStateColor={d.pressureStateColor}
+          currentPhase={d.currentPhase} coachHeader={d.coachHeader}
+          coachLines={d.coachLines} coachClosing={d.coachClosing}
+          coachFocus={d.coachFocus} confidenceScore={0}
+          recommendation={d.recommendation} recommendedRoute={d.recommendedRoute}
         />
-
-        {/* 2. Next Best Action */}
-        <NextBestAction {...data.nextBestAction} />
-
-        {/* 3. Recovery Readiness + Emotional State */}
-        <RecoveryReadiness
-          score={data.recoveryReadiness}
-          emotionalState={data.emotionalState}
-          emotionalStateColor={data.emotionalStateColor}
-        />
-
-        {/* 4. Live Call Center */}
+        <NextBestAction {...d.nextBestAction} />
+        <RecoveryReadiness score={d.recoveryReadiness} emotionalState={d.emotionalState} emotionalStateColor={d.emotionalStateColor} />
         <LiveCallCenter />
-
-        {/* 5. Mina Memory */}
-        <MinaMemory memoryCards={data.memoryCards} />
-
-        {/* 6. Pressure Map */}
-        <PressureMap areas={data.pressureAreas} />
-
-        {/* 7. Workspaces */}
+        <MinaMemory memoryCards={d.memoryCards} />
+        <PressureMap areas={d.pressureAreas} />
         <Workspaces />
-
-        {/* 8. Recovery Journey */}
-        <RecoveryJourney
-          phases={data.journeyPhases}
-          currentIndex={data.currentJourneyIndex}
-          nextMilestoneName={data.nextMilestoneName}
-          journeyProgress={data.journeyProgress}
-        />
-
-        {/* 9. Mina Noticed */}
-        <MinaNoticed observation={data.behaviorObservation} />
-
+        <RecoveryJourney phases={d.journeyPhases} currentIndex={d.currentJourneyIndex} nextMilestoneName={d.nextMilestoneName} journeyProgress={d.journeyProgress} />
+        <MinaNoticed observation={d.behaviorObservation} />
       </main>
     </div>
   );
