@@ -15,7 +15,11 @@ export interface MemoryCard { label: string; value: string; coachingNote: string
 export interface DashboardData {
   firstName: string;
   pressureState: PressureState; pressureStateColor: string; currentPhase: CurrentPhase;
-  heroLines: string[]; heroClosing: string; heroFocus: string;
+  // Hero — short: observation + insight + closing (teal) + focus
+  heroObservation: string;
+  heroInsight: string;
+  heroClosing: string;
+  heroFocus: string;
   primaryAction: PrimaryAction;
   memoryCards: MemoryCard[];
   journeyPhases: string[]; currentJourneyIndex: number;
@@ -42,70 +46,59 @@ function derivePhase(d: OnboardingData): CurrentPhase {
   return "Stabilize";
 }
 
-// Interpretation only — no recommendation, no action
-function deriveHero(d: OnboardingData): { lines: string[]; closing: string; focus: string } {
+// Short hero: Observation + Insight + Closing. Under 5 sentences total.
+function deriveHero(d: OnboardingData): { observation: string; insight: string; closing: string; focus: string } {
   const avoider = d.behaviorPatterns.some(b => b.toLowerCase().includes("avoid") || b.toLowerCase().includes("ignore"));
   const panicker = d.behaviorPatterns.some(b => b.toLowerCase().includes("panic") || b.toLowerCase().includes("agree"));
-  const shutsDown = d.behaviorPatterns.some(b => b.toLowerCase().includes("shut down"));
   const hasLegal = d.pressureSources.some(s => s.toLowerCase().includes("lawsuit") || s.toLowerCase().includes("legal"));
   const hasCollectors = d.pressureSources.some(s => s.toLowerCase().includes("collector"));
-  const highUrgency = d.urgencyLevel >= 4;
+  const high = d.urgencyLevel >= 4;
   const multi = d.pressureSources.length > 1;
 
-  const situationLine = highUrgency
-    ? "The pressure you are under right now is high enough that decisions feel dangerous — like every move could make things worse."
-    : hasLegal
-    ? "Legal pressure creates a specific kind of freeze. Every action feels risky because the consequences feel final."
-    : multi
-    ? "Carrying multiple debt sources at once makes it hard to know which one deserves attention first — so it can feel like nothing is moving."
-    : "Financial pressure is not just about money. It is about the weight of decisions that feel more dangerous than they are.";
+  // Observation: what the situation is (one short sentence)
+  const observation = hasLegal ? "You are carrying legal pressure on top of everything else."
+    : hasCollectors ? "Collector calls are the main source of pressure right now."
+    : high ? "The pressure is high enough that decisions feel dangerous."
+    : multi ? "Multiple debt sources are creating pressure at the same time."
+    : "The uncertainty here is heavier than the debt itself.";
 
-  const behaviorLine = avoider
-    ? "Under this kind of pressure, stepping back from difficult conversations is a natural response. The mind is protecting itself from the cost of being wrong."
-    : panicker
-    ? "Under pressure, the impulse to respond quickly — to just agree and make the stress stop — is extremely common. It is not a character flaw. It is what urgency does to decision-making."
-    : shutsDown
-    ? "When too many pressures converge, shutting down is not avoidance. It is the brain trying to prevent overload."
-    : "The instinct to fully understand before acting is not hesitation. It is how careful people protect themselves from costly mistakes.";
+  // Insight: what pattern Mina sees (one short sentence)
+  const insight = avoider ? "When pressure rises, you tend to step back — not from weakness, but to avoid making the wrong move."
+    : panicker ? "Under pressure, you tend to respond before you have had time to think it through."
+    : "You prefer understanding the full picture before acting.";
 
-  const closing = hasLegal
-    ? "Mina's role is to help you separate what is urgent from what is fear — so you can respond with facts, not panic."
-    : avoider
-    ? "Mina's role is not to push you into action. It is to help you understand what is safe before you engage."
-    : panicker
-    ? "Mina's role is to slow the moment down so the decision is yours — not the caller's."
-    : "Mina's role is to help you think clearly in a situation designed to prevent that.";
+  // Closing: what this means for Mina's approach (teal italic, one sentence)
+  const closing = hasLegal ? "Mina will help you understand every deadline and every right before you respond to anything."
+    : avoider ? "Mina will prepare you before the pressure arrives — so you can respond on your terms."
+    : panicker ? "Mina will slow the moment down so the decision stays yours."
+    : "Mina will help you replace uncertainty with specific, actionable clarity.";
 
-  const focus = avoider
-    ? "Notice when avoidance feels like protection. That is the moment to pause before deciding."
-    : panicker
-    ? "Before responding to any financial request today, take 10 seconds. Urgency is almost always manufactured."
-    : hasLegal
-    ? "Do not respond to anything legal until you understand what it actually requires."
-    : "Identify the single thing creating the most pressure. Everything else can wait.";
+  const focus = hasLegal ? "Do not respond to anything legal until you understand what it actually requires."
+    : hasCollectors ? "Have your response ready before the next call. Not during it."
+    : high ? "Identify one thing. Address that. Everything else can wait."
+    : "Replace uncertainty with one specific fact about where you stand.";
 
-  return { lines: [situationLine, behaviorLine], closing, focus };
+  return { observation, insight, closing, focus };
 }
 
-// Decision logic only — why this action, why now
 function derivePrimaryAction(d: OnboardingData): PrimaryAction {
   const hasLegal = d.pressureSources.some(s => s.toLowerCase().includes("lawsuit") || s.toLowerCase().includes("legal"));
   const hasCollectors = d.pressureSources.some(s => s.toLowerCase().includes("collector"));
   if (hasLegal) return {
     label: "Upload Legal Document", route: "/documents", timeRequired: "3 minutes", impact: "High",
-    whyRecommends: "Legal documents have hard deadlines. Letting one pass without response — even accidentally — can result in a default judgment. Three minutes now eliminates that risk.",
+    whyRecommends: "Legal documents have hard deadlines. Letting one pass — even accidentally — can result in a default judgment. Three minutes now eliminates that risk.",
   };
   if (hasCollectors) return {
     label: "Prepare for a Collector Call", route: "/live-call", timeRequired: "5 minutes", impact: "High",
-    whyRecommends: "Collector calls are scripted to produce agreements under stress. The only way to avoid that is to have your response ready before the call — not during it.",
+    whyRecommends: "Collector calls are scripted to produce agreements under stress. The only way to change the outcome is to have your response ready before the call — not during it.",
   };
   if (d.urgencyLevel >= 4) return {
     label: "Start Stabilize Mode", route: "/stabilize", timeRequired: "3 minutes", impact: "High",
-    whyRecommends: "High pressure distorts urgency. Stabilize Mode separates real risk from perceived risk so your next action is the right one, not just the one that relieves anxiety fastest.",
+    whyRecommends: "High pressure distorts urgency. Stabilize Mode separates real risk from perceived risk so your next action is the right one — not just the one that feels most urgent.",
   };
   return {
     label: "Upload the Most Stressful Letter", route: "/documents", timeRequired: "3 minutes", impact: "Medium",
-    whyRecommends: "Unread or misunderstood documents are one of the most common sources of ongoing anxiety in debt situations. Once Mina analyzes it, the uncertainty disappears.",
+    whyRecommends: "Unread or misunderstood documents are one of the most persistent sources of anxiety in debt situations. Once Mina analyzes it, the uncertainty disappears.",
   };
 }
 
@@ -114,11 +107,11 @@ function deriveMemoryCards(d: OnboardingData, main: string, fear: string, style:
   const multi = d.pressureSources.length > 1;
   return [
     { label: "What you're carrying", value: multi ? `${d.pressureSources.length} sources of pressure` : main,
-      coachingNote: multi ? "Multiple sources tracked across your answers." : "This shapes where Mina focuses first." },
+      coachingNote: multi ? "Multiple sources tracked." : "This is where Mina focuses first." },
     { label: "What worries you most", value: fear,
-      coachingNote: avoider ? "Mina works around this in every recommendation." : "This appears across multiple answers." },
+      coachingNote: avoider ? "Mina works around this." : "Noted across multiple answers." },
     { label: "How you prefer support", value: style,
-      coachingNote: "This shapes the tone of every response." },
+      coachingNote: "Shapes every response." },
     { label: "Where you are now", value: phase,
       coachingNote: "Updates as you take action." },
   ];
@@ -145,14 +138,17 @@ export function useDashboardData(): DashboardData {
     const mainPressure = raw.pressureSources.length > 0
       ? (raw.pressureSources.length === 1 ? raw.pressureSources[0] : `${raw.pressureSources.length} debt sources`)
       : "General financial pressure";
-    const fearPattern = raw.fears.length > 0 ? raw.fears[0] : "Managing uncertainty";
-    const supportStyle = raw.supportStyle[0] ?? "Step-by-step guidance";
     return {
       firstName: "there",
       pressureState, pressureStateColor: STATE_COLOR[pressureState], currentPhase: phase,
-      heroLines: hero.lines, heroClosing: hero.closing, heroFocus: hero.focus,
+      heroObservation: hero.observation,
+      heroInsight: hero.insight,
+      heroClosing: hero.closing,
+      heroFocus: hero.focus,
       primaryAction: action,
-      memoryCards: deriveMemoryCards(raw, mainPressure, fearPattern, supportStyle, phase),
+      memoryCards: deriveMemoryCards(raw, mainPressure,
+        raw.fears.length > 0 ? raw.fears[0] : "Making the wrong move",
+        raw.supportStyle[0] ?? "Step-by-step guidance", phase),
       journeyPhases, currentJourneyIndex,
       journeyProgress: Math.round((currentJourneyIndex / (journeyPhases.length - 1)) * 100),
       nextMilestoneName: NEXT_MILESTONES[journeyPhases[currentJourneyIndex]] ?? "",
