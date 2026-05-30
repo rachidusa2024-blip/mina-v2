@@ -91,6 +91,17 @@ export default function AccountCreation({ lang, onComplete }: AccountCreationPro
   const handleSubmit = async () => {
     if (!validate()) return;
     setLoading(true);
+
+    // Validate env vars before attempting — surface misconfiguration immediately
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || supabaseUrl.includes("aBcDe") || !supabaseKey) {
+      console.error("[Mina] Supabase env vars missing or invalid:", { supabaseUrl: supabaseUrl ?? "MISSING" });
+      setErrors({ general: "Configuration error: Supabase URL is missing or invalid. Contact support." });
+      setLoading(false);
+      return;
+    }
+
     try {
       const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
@@ -108,7 +119,12 @@ export default function AccountCreation({ lang, onComplete }: AccountCreationPro
       });
 
       if (signUpError) {
-        setErrors({ general: signUpError.message });
+        // Log full error object so devtools shows root cause
+        console.error("[Mina] supabase.auth.signUp error:", signUpError);
+        const msg = signUpError.message === "Failed to fetch"
+          ? "Cannot reach Supabase. Check NEXT_PUBLIC_SUPABASE_URL in Vercel env vars."
+          : signUpError.message;
+        setErrors({ general: msg });
         setLoading(false);
         return;
       }
@@ -143,7 +159,8 @@ export default function AccountCreation({ lang, onComplete }: AccountCreationPro
       }
 
       onComplete(values.email);
-    } catch {
+    } catch (err) {
+      console.error("[Mina] AccountCreation unexpected error:", err);
       setErrors({ general: c.errors.general });
     }
     setLoading(false);
